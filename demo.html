@@ -1,0 +1,187 @@
+<head>
+    <script src='./tool.js'></script>
+    <script src='./snakeCore.js'></script>
+    <script src='./snakeGame.js'></script>
+</head>
+
+<body>
+    <canvas id='canvas'></canvas>
+    <label>宽</label>
+    <input id='inputWidth' type="number"></input>
+    <label>高</label>
+    <input id='inputHeight' type="number"></input>
+    <label>延迟</label>
+    <input id='inputDelay' type="number"></input>
+    <input type="button" value="设置" onclick="setConfig()"></input>
+    <input type="button" value="开始" onclick="play()"></input>
+    <input type="button" value="暂停" onclick="pause()"></input>
+    <input type="button" value="恢复" onclick="resume()"></input>
+    <input type="button" value="停止" onclick="stop()"></input>
+    <label>宽</label>
+    <span id='textWidth'></span>
+    <label>高</label>
+    <span id='textHeight'></span>
+    <label>延迟</label>
+    <span id='textDelay'></span>
+    <label>进度</label>
+    <span id='textProgress'></span>
+    <label>状态</label>
+    <span id='textStatus'></span>
+    <label>得分</label>
+    <span id='textScore'></span>
+    <script>
+        var setConfig = function () {
+            var config = {
+                width: Number.parseInt(inputWidth.value),
+                height: Number.parseInt(inputHeight.value),
+                delay: Number.parseInt(inputDelay.value),
+            };
+            game.SetConfig(config);
+        };
+
+        var play = function () {
+            game.Play();
+            textWidth.innerText = game.content.sandTable.width;
+            textHeight.innerText = game.content.sandTable.width;
+            textDelay.innerText = game.config.delay;
+            textProgress.innerText = ['play', 'win', 'defeat'][game.progress];
+            textStatus.innerText = ['stop', 'play', 'pause'][game.status];
+        };
+
+        var pause = function () {
+            game.Pause();
+            textProgress.innerText = ['play', 'win', 'defeat'][game.progress];
+            textStatus.innerText = ['stop', 'play', 'pause'][game.status];
+        };
+
+        var resume = function () {
+            game.Resume();
+            textProgress.innerText = ['play', 'win', 'defeat'][game.progress];
+            textStatus.innerText = ['stop', 'play', 'pause'][game.status];
+        };
+
+        var stop = function () {
+            game.Stop();
+            textProgress.innerText = ['play', 'win', 'defeat'][game.progress];
+            textStatus.innerText = ['stop', 'play', 'pause'][game.status];
+        };
+
+        onkeyup = function (e) {
+            var key = {
+                '37': Direction.Left,
+                '38': Direction.Up,
+                '39': Direction.Right,
+                '40': Direction.Down
+            };
+            if (key[e.keyCode] !== undefined) {
+                game.Turn(key[e.keyCode]);
+            }
+        };
+
+        var helper = (() => {
+            var ctx = canvas.getContext('2d');
+            var ratio = 16;
+            var width;
+            var height;
+
+            var getPoint = function ({ x, y }) {
+                return { x: (x + 1) * ratio, y: (y + 1) * ratio };
+            };
+
+            var init = function (config) {
+                width = config.width + 2;
+                height = config.height + 2;
+                canvas.width = width * ratio;
+                canvas.height = height * ratio;
+
+                ctx.strokeStyle = 'brown';
+                ctx.lineWidth = ratio;
+                ctx.strokeRect(0, 0, canvas.width, canvas.height);
+            };
+
+            var drawBody = function (point) {
+                ctx.fillStyle = 'yellow';
+                var { x, y } = getPoint(point);
+                ctx.fillRect(x, y, ratio - 1, ratio - 1);
+            };
+
+            var drawAllBody = function (body) {
+                ctx.fillStyle = 'red';
+                for (var point of body) {
+                    var { x, y } = getPoint(point);
+                    ctx.fillRect(x, y, ratio, ratio);
+                }
+            };
+
+            var clearBody = function (point) {
+                ctx.fillStyle = 'white';
+                var { x, y } = getPoint(point);
+                ctx.fillRect(x, y, ratio, ratio);
+            };
+
+            var drawHurt = function (point) {
+                ctx.fillStyle = 'black';
+                var { x, y } = getPoint(point);
+                ctx.fillRect(x, y, ratio, ratio);
+            };
+
+            var drawFood = function (point) {
+                ctx.fillStyle = 'green';
+                var { x, y } = getPoint(point);
+                ctx.fillRect(x, y, ratio, ratio);
+            };
+
+            return {
+                init,
+                drawBody,
+                drawAllBody,
+                clearBody,
+                drawHurt,
+                drawFood,
+            };
+        })();
+
+        var { Direction } = SnakeGame;
+        var game = new SnakeGame.Game();
+        game.onTurn.Add((content, eventArgument) => {
+        });
+        game.onMove.Add((content, eventArgument) => {
+            helper.drawBody(eventArgument.move);
+            if (!content.snake.Bit(eventArgument.remove)) {
+                helper.clearBody(eventArgument.remove);
+            }
+        });
+        game.onBiteItself.Add((content, eventArgument) => {
+            helper.drawHurt(eventArgument.head);
+        });
+        game.onDie.Add(content => {
+            helper.drawAllBody(content.snake.GetBody());
+        });
+        game.onGrow.Add((content, eventArgument) => {
+            helper.drawBody(eventArgument.add);
+        });
+        game.onCross.Add((content, eventArgument) => {
+        });
+        game.onGetFood.Add((content, eventArgument) => {
+        });
+        game.onSetFood.Add((content, eventArgument) => {
+            helper.drawFood(eventArgument.food);
+        });
+        game.onLoad.Add(content => {
+            helper.init(content.sandTable);
+            helper.drawBody(content.snake.head);
+            helper.drawFood(content.food);
+        });
+        game.onGrade.Add((content, eventArgument) => {
+            textScore.innerText = game.score;
+        });
+        game.onDefeat.Add((content, eventArgument) => {
+            textProgress.innerText = ['play', 'win', 'defeat'][game.progress];
+            textStatus.innerText = 'stop'
+        });
+        game.onWin.Add((content, eventArgument) => {
+            textProgress.innerText = ['play', 'win', 'defeat'][game.progress];
+            textStatus.innerText = 'stop'
+        });
+    </script>
+</body>
