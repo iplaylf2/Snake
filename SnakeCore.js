@@ -37,7 +37,7 @@ var SnakeCore = (() => {
 
             var Turn = function (direct) {
                 if (alive) {
-                    if (direct === moveDirection || Math.abs(direct - moveDirection) === 2) {
+                    if (direct === readyDirection || Math.abs(direct - moveDirection) === 2) {
                         return;
                     }
                     else {

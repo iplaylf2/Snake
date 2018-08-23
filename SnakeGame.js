@@ -25,12 +25,19 @@ var SnakeGame = (() => {
             var [onWinInvoke, onWin] = GetEvent();
 
             var core = new Core();
+            var config = {
+                width: 10,
+                height: 10
+            };
             var progress = GameProgress.Play;
             var status = GameStatus.Stop;
-            var score;
             var tid;
-            var config = {};
-            var newConfig = {};
+            var score;
+            var level;
+            const levelCount = 20;
+            const maxDelay = 1000;
+            const minDelay = 100;
+            const delayTable = new Array(levelCount).fill(0).map((_, i) => maxDelay / ((maxDelay / minDelay - 1) * i / (levelCount - 1) + 1));
 
             var InitializeCore = function () {
                 core.onTurn.Add(onTurnInvoke);
@@ -46,6 +53,12 @@ var SnakeGame = (() => {
                     if (content.snake.length === content.sandTable.area) {
                         Win();
                     }
+
+                    var progress = Math.floor(content.snake.length / (content.sandTable.area / levelCount));
+                    if (progress !== level) {
+                        level = progress;
+                        AfreshBeat();
+                    }
                 });
                 core.onCross.Add(onCrossInvoke);
                 core.onGetFood.Add(onGetFoodInvoke);
@@ -58,7 +71,7 @@ var SnakeGame = (() => {
             };
 
             var Grade = function () {
-                var goal = 1000 / config.delay;
+                var goal = 1;
                 score += goal;
                 var eventArgument = {
                     goal
@@ -87,29 +100,22 @@ var SnakeGame = (() => {
             var BeginBeat = function () {
                 tid = setInterval(() => {
                     core.Move();
-                }, config.delay);
+                }, delayTable[level]);
             };
 
             var StopBeat = function () {
                 clearInterval(tid);
             };
 
-            var LoadConfig = function () {
-                if (config.width === newConfig.width && config.height === newConfig.height) {
-                    core.Reset();
-                }
-                else {
-                    config.width = newConfig.width;
-                    config.height = newConfig.height;
-                    core.Run(config);
-                }
-
-                config.delay = newConfig.delay;
+            var AfreshBeat = function () {
+                StopBeat();
+                BeginBeat();
             };
 
             var Play = function () {
                 if (status === GameStatus.Stop) {
-                    LoadConfig();
+                    core.Run(config);
+                    level = 0;
                     BeginBeat();
                     progress = GameProgress.Play;
                     status = GameStatus.Play;
@@ -140,22 +146,13 @@ var SnakeGame = (() => {
                 }
             };
 
-            var SetConfig = function (c) {
-                newConfig = {
-                    width: c.width,
-                    height: c.height,
-                    delay: c.delay
-                };
-            };
-
             InitializeCore();
 
             DefineGet(this, {
                 content: () => core.state,
                 progress: () => progress,
                 status: () => status,
-                score: () => score,
-                config: () => Object.assign({}, config)
+                score: () => score
             });
 
             Extend(this, {
@@ -175,8 +172,7 @@ var SnakeGame = (() => {
                 Play,
                 Pause,
                 Resume,
-                Stop,
-                SetConfig
+                Stop
             });
         };
 
