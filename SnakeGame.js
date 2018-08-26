@@ -37,7 +37,9 @@ var SnakeGame = (() => {
             const levelCount = 20;
             const maxDelay = 1000;
             const minDelay = 100;
-            const delayTable = new Array(levelCount).fill(0).map((_, i) => maxDelay / ((maxDelay / minDelay - 1) * i / (levelCount - 1) + 1));
+            const delayTable = new Array(levelCount)
+                .fill(0)
+                .map((_, i) => maxDelay / ((maxDelay / minDelay - 1) * i / (levelCount - 1) + 1));
 
             var InitializeCore = function () {
                 core.onTurn.Add(onTurnInvoke);
