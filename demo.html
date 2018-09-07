@@ -5,9 +5,76 @@
 </head>
 
 <body>
-    <img id="chartlet" src="./chartlet.png" hidden />
     <canvas id="view"></canvas>
     <script>
+        var chartlet;
+        var SnakeView = (() => {
+            var coordinateMap = function ({ x, y }) {
+                return {
+                    x: (x + 1) * 50,
+                    y: (y + 1) * 50
+                };
+            };
 
+            var itemMap = function (x, y, width, height) {
+                return { x, y, width, height };
+            };
+
+            var AliveHead = {
+                Up: itemMap(50, 0, 50, 50),
+                Right: itemMap(100, 0, 50, 50),
+                Down: itemMap(0, 0, 50, 50),
+                Left: itemMap(150, 0, 50, 50)
+            };
+
+            var DeathHead = {
+                Up: itemMap(50, 50, 50, 50),
+                Right: itemMap(100, 50, 50, 50),
+                Down: itemMap(0, 50, 50, 50),
+                Left: itemMap(150, 50, 50, 50),
+            };
+
+            var Body = itemMap(150, 100, 50, 50);
+            var Tail = itemMap(200, 0, 50, 50);
+
+            var Food = itemMap(200, 50, 50, 50);
+            var Good = itemMap(200, 100, 50, 50);
+            var Bad = itemMap(200, 150, 50, 50);
+
+            var Background = {
+                TopLeft: itemMap(0, 100, 50, 50),
+                TopRight: itemMap(100, 100, 50, 50),
+                ButtomRight: itemMap(100, 150, 50, 50),
+                ButtomLeft: itemMap(50, 150, 50, 50),
+                Horizon: itemMap(50, 100, 50, 50),
+                Vertical: itemMap(0, 200, 50, 50)
+            };
+
+            var SnakeView = function (view, {
+                width,
+                height
+            }) {
+                Extend({
+                    Turn,
+                    Move,
+                    BiteItself,
+                    Die,
+                    Grown,
+                    Cross,
+                    GetFood,
+                    SetFood,
+                    Grade
+                });
+            };
+            return SnakeView;
+        })();
+
+        var loadGame = function () {
+
+        };
+
+        chartlet = new Image();
+        chartlet.onload = loadGame;
+        chartlet.src = './chartlet.png';
     </script>
 </body>
