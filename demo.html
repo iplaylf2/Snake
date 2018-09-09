@@ -54,6 +54,24 @@
                 width,
                 height
             }) {
+                view.width=width;
+                viw.height=height;
+                var viewCtx= view.getContext('2d');
+
+                var backgroundLayer=document.createElement('canvas');
+                backgroundLayer.width=width;
+                backgroundLayer.height=height;
+                var backgroundLayerCtx=backgroundLayer.getContext('2d');
+
+                var objectLayer=document.createElement('canvas');
+                objectLayer.width=width;
+                objectLayer.height=height;
+                var objectLayerCtx=objectLayer.getContext('2d');
+
+                var effectLayer=document.createElement('canvas');
+                effectLayer.width=width;
+                effectLayer.height=height;
+                var effectLayerCtx=effectLayer.getContext('2d');
                 Extend({
                     Turn,
                     Move,
