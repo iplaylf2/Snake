@@ -9,33 +9,40 @@
     <script>
         var chartlet;
         var SnakeView = (() => {
-            var coordinateMap = function ({ x, y }) {
+            var itemMap = function (x, y, width, height) {
+                var sourceX = x, sourceY = y;
+                var draw = function (ctx, { x, y }) {
+                    ctx.drawImage(chartlet, sourceX, sourceY, width, height, x, y, width, height);
+                };
+                var clear = function (ctx, { x, y }) {
+                    ctx.clearRect(x, y, width, height);
+                };
                 return {
-                    x: (x + 1) * 50,
-                    y: (y + 1) * 50
+                    draw,
+                    clear,
+                    width,
+                    height
                 };
             };
 
-            var itemMap = function (x, y, width, height) {
-                return { x, y, width, height };
-            };
+            var roundSize = 50;
 
             var AliveHead = {
-                Up: itemMap(50, 0, 50, 50),
-                Right: itemMap(100, 0, 50, 50),
-                Down: itemMap(0, 0, 50, 50),
-                Left: itemMap(150, 0, 50, 50)
+                Up: itemMap(50, 0, roundSize, roundSize),
+                Right: itemMap(100, 0, roundSize, roundSize),
+                Down: itemMap(0, 0, roundSize, roundSize),
+                Left: itemMap(150, 0, roundSize, roundSize)
             };
 
             var DeathHead = {
-                Up: itemMap(50, 50, 50, 50),
-                Right: itemMap(100, 50, 50, 50),
-                Down: itemMap(0, 50, 50, 50),
-                Left: itemMap(150, 50, 50, 50),
+                Up: itemMap(50, 50, roundSize, roundSize),
+                Right: itemMap(100, 50, roundSize, roundSize),
+                Down: itemMap(0, 50, roundSize, roundSize),
+                Left: itemMap(150, 50, roundSize, roundSize),
             };
 
-            var Body = itemMap(150, 100, 50, 50);
-            var Tail = itemMap(200, 0, 50, 50);
+            var Body = itemMap(150, 100, roundSize, roundSize);
+            var Tail = itemMap(200, 0, roundSize, roundSize);
 
             var Food = itemMap(200, 50, 50, 50);
             var Good = itemMap(200, 100, 50, 50);
@@ -50,35 +57,184 @@
                 Vertical: itemMap(0, 200, 50, 50)
             };
 
+            var coordinateMap = function ({ x, y }) {
+                return {
+                    x: (x + 1) * roundSize,
+                    y: (y + 1) * roundSize
+                };
+            };
+
+            var createLayer = function ({ width, height }) {
+                var layer = document.createElement('canvas');
+                layer.width = width;
+                layer.height = height;
+                var layerCtx = layer.getContext('2d');
+                layerCtx.clearRect(0, 0, width, height);
+                return [layer, layerCtx];
+            };
+
             var SnakeView = function (view, {
                 width,
                 height
             }) {
-                view.width=width;
-                viw.height=height;
-                var viewCtx= view.getContext('2d');
+                var canvasWidth = (width + 2) * 50;
+                var canvasHeight = (height + 2) * 50;
 
-                var backgroundLayer=document.createElement('canvas');
-                backgroundLayer.width=width;
-                backgroundLayer.height=height;
-                var backgroundLayerCtx=backgroundLayer.getContext('2d');
+                var viewCtx = view.getContext('2d');
+                var [backgroundLayer, backgroundLayerCtx] = createLayer({ width: canvasWidth, height: canvasHeight });
+                var [objectLayer, objectLayerCtx] = createLayer({ width: canvasWidth, height: canvasHeight });
+                var [effectLayer, effectLayerCtx] = createLayer({ width: canvasWidth, height: canvasHeight });
+                var [uiLayer, uiLayerCtx] = createLayer({ width: canvasWidth, height: canvasHeight });
+                var [mergeLayer, mergeLayerCtx] = createLayer({ width: 0, height: 0 });
 
-                var objectLayer=document.createElement('canvas');
-                objectLayer.width=width;
-                objectLayer.height=height;
-                var objectLayerCtx=objectLayer.getContext('2d');
+                var updateMap = new Map();
 
-                var effectLayer=document.createElement('canvas');
-                effectLayer.width=width;
-                effectLayer.height=height;
-                var effectLayerCtx=effectLayer.getContext('2d');
+                view.width = canvasWidth;
+                viw.height = canvasHeight;
+
+                var clearAllLayer = function () {
+                    backgroundLayerCtx.clearRect(0, 0, canvasWidth, canvasHeight);
+                    objectLayerCtx.clearRect(0, 0, canvasWidth, canvasHeight);
+                    effectLayerCtx.clearRect(0, 0, canvasWidth, canvasHeight);
+                    uiLayerCtx.clearRect(0, 0, canvasWidth, canvasHeight);
+                };
+
+                var recordUpdate = function ({ x, y, width, height }) {
+                    updateMap.set(`${x},${y},${width},${height}`, { x, y, width, height });
+                };
+
+                var updateView = function () {
+                    for (var rect of updateMap.values()) {
+                        mergeLayer.width = rect.width;
+                        mergeLayer.height = rect.height;
+                        mergeLayerCtx.clearRect(0, 0, rect.width, rect.height);
+                        mergeLayerCtx.drawImage(backgroundLayer, rect.x, rect.y, rect.width, rect.height, 0, 0, rect.width, rect.height);
+                        mergeLayerCtx.drawImage(objectLayer, rect.x, rect.y, rect.width, rect.height, 0, 0, rect.width, rect.height);
+                        mergeLayerCtx.drawImage(effectLayer, rect.x, rect.y, rect.width, rect.height, 0, 0, rect.width, rect.height);
+                        mergeLayerCtx.drawImage(uiLayer, rect.x, rect.y, rect.width, rect.height, 0, 0, rect.width, rect.height);
+                        viewCtx.drawImage(mergeLayer, 0, 0, rect.width, rect.height, rect.x, rect.y, rect.width, rect.height);
+                    }
+                    updateMap.clear();
+                };
+
+                var drawBackground = function () {
+                    backgroundLayerCtx.fillStyle = 'white';
+                    backgroundLayerCtx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+                    var horizon = Background.Horizon;
+                    var top = 0;
+                    var buttom = (height + 1) * horizon.height;
+                    for (var i = 1; i !== width + 1; i++) {
+                        horizon.draw(backgroundLayerCtx, { x: i * horizon.width, y: top });
+                        horizon.draw(backgroundLayerCtx, { x: i * horizon.width, y: buttom });
+                    }
+
+                    var vertical = Background.Vertical;
+                    var left = 0;
+                    var right = (width + 1) * vertical.width;
+                    for (var j = 1; j !== height + 1; j++) {
+                        vertical.draw(backgroundLayerCtx, { x: left, y: j * vertical.height });
+                        vertical.draw(backgroundLayerCtx, { x: right, y: j * vertical.height });
+                    }
+
+                    Background.TopLeft.draw(backgroundLayerCtx, { x: left, y: top });
+                    Background.TopRight.draw(backgroundLayerCtx, { x: right, y: top });
+                    Background.ButtomLeft.draw(backgroundLayerCtx, { x: left, y: buttom });
+                    Background.ButtomRight.draw(backgroundLayerCtx, { x: right, y: buttom });
+
+                    recordUpdate({ x: left, y: top, width: canvasWidth, height: canvasHeight });
+                };
+
+                var drawscore = (() => {
+                    var scoreText = { width: 0, height: 0 };
+                    return score => {
+                        uiLayerCtx.clearRect(0, 0, scoreText.width, scoreText.height);
+                        uiLayerCtx.fillText(score.toString(), 0, 0);
+                        var { width, height } = uiLayerCtx.measureText(score.toString());
+                        scoreText.width = width;
+                        scoreText.height = height;
+
+                        recordUpdate({ x: 0, y: 0, width, height });
+                    };
+                })();
+
+                var Reset = function () {
+                    clearAllLayer();
+                    drawBackground();
+                    drawscore(0);
+
+                    updateView();
+                };
+
+                var [Build, Turn, Move, Die, Grown] = (() => {
+                    var Direction = {
+                        Up: 0, Right: 1, Down: 2, Left: 3
+                    };
+
+                    var snake = {
+                        head: {}
+                    };
+
+                    var drawHead = function () {
+                        var head;
+                        switch (snake.direction) {
+                            case Direction.Up:
+                                head = AliveHead.Up;
+                                break;
+                            case Direction.Right:
+                                head = AliveHead.Right;
+                                break;
+                            case Direction.Down:
+                                head = AliveHead.Down;
+                                break;
+                            case Direction.Left:
+                                head = AliveHead.Left;
+                                break;
+                        };
+                        var { x, y } = coordinateMap(snake.head);
+                        head.clear(objectLayerCtx, { x, y });
+                        head.draw(objectLayerCtx, { x, y });
+
+                        recordUpdate({ x, y, width: head.width, height: head.height });
+                    };
+
+                    var Build = function (head, direction) {
+                        snake.head = { x: head.x, y: head.y };
+                        snake.direction = direction;
+                        drawHead();
+
+                        updateView();
+                    };
+
+                    var Turn = function (direction) {
+                        snake.direction = direction;
+                        drawHead();
+
+                        updateView();
+                    };
+
+                    var Move = function () {
+
+                    };
+
+                    var Die = function () {
+
+                    };
+
+                    var Grown = function () {
+
+                    };
+
+                    return [Build, Turn, Move, Die, Grown];
+                })();
+
                 Extend({
+                    Reset,
+                    Build,
                     Turn,
                     Move,
-                    BiteItself,
                     Die,
                     Grown,
-                    Cross,
                     GetFood,
                     SetFood,
                     Grade
