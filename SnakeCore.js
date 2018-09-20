@@ -27,7 +27,7 @@ var SnakeCore = (() => {
                 return bodyList.map(({ x, y }) => Object({ x, y }));
             };
 
-            var Bit = function ({ x, y }) {
+            var Bite = function ({ x, y }) {
                 return bodyList[0].x === x && bodyList[0].y === y;
             };
 
