@@ -384,7 +384,7 @@
             var { Direction, GameStatus, GameProgress, Game } = SnakeGame;
             var snakeGame = new Game();
             var snakeView = new SnakeView(view, { width: 10, height: 10 });
-            snakeView.Reset();
+
             document.body.onkeyup = function (e) {
                 switch (e.keyCode) {
                     case 87:
@@ -443,7 +443,9 @@
             });
 
             snakeGame.onLoad.Add(state => {
+                snakeView.Reset();
                 snakeView.Build(state.snake.head, state.snake.direction);
+                snakeView.SetFood(state.food);
             });
         };
 
