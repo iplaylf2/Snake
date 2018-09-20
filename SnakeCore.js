@@ -125,7 +125,7 @@ var SnakeCore = (() => {
                 tail: () => Object.assign({}, bodyList[bodyList.length - 1]),
                 length: () => bodyList.length,
                 GetBody: () => GetBody,
-                Bit: () => Bit,
+                Bite: () => Bite,
                 Touch: () => Touch,
             });
 
@@ -234,7 +234,7 @@ var SnakeCore = (() => {
             };
 
             var FindFood = function () {
-                if (snake.state.Bit(food)) {
+                if (snake.state.Bite(food)) {
                     var eventArgument = {
                         head: snake.state.head
                     };
